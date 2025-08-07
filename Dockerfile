@@ -3,8 +3,9 @@
 # ====================
 FROM golang:1.21-alpine AS builder
 
-# 配置国内镜像源并安装必要的构建工具和依赖
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
+# 配置镜像源并安装必要的构建工具和依赖（适用于亚太地区）
+RUN echo "https://mirrors.ustc.edu.cn/alpine/v3.22/main" > /etc/apk/repositories && \
+    echo "https://mirrors.ustc.edu.cn/alpine/v3.22/community" >> /etc/apk/repositories && \
     apk update && \
     apk add --no-cache \
     gcc \
@@ -39,8 +40,9 @@ RUN go build -tags "sqlite_omit_load_extension" -ldflags "-s -w" -o bookmark mai
 # ====================
 FROM alpine:latest
 
-# 配置国内镜像源并安装运行时依赖
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
+# 配置镜像源并安装运行时依赖（适用于亚太地区）
+RUN echo "https://mirrors.ustc.edu.cn/alpine/v3.22/main" > /etc/apk/repositories && \
+    echo "https://mirrors.ustc.edu.cn/alpine/v3.22/community" >> /etc/apk/repositories && \
     apk update && \
     apk add --no-cache \
     ca-certificates \
