@@ -26,27 +26,80 @@
 
 ## 安装与运行
 
-### 1. 安装依赖
+### 🚀 方式一：Docker 部署（推荐）
+
+#### 快速部署
+```bash
+# 设置私有仓库配置
+export REGISTRY_URL=your-registry.com
+export NAMESPACE=your-namespace
+
+# 一键构建和推送
+./quick_deploy.sh
+
+# 在目标服务器运行
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+#### 高级构建（支持多架构）
+```bash
+# 完整构建脚本（支持 linux/amd64, linux/arm64）
+./build_and_push.sh -r your-registry.com -n your-namespace -v v1.0.0
+
+# 使用生成的部署文件
+cd deploy && ./deploy.sh
+```
+
+#### 本地测试
+```bash
+# 使用 docker-compose 本地运行
+docker-compose up -d
+
+# 访问应用
+open http://localhost:8080
+```
+
+### 🛠️ 方式二：源码部署
+
+#### 1. 安装依赖
 
 ```bash
 go mod download
 ```
 
-### 2. 运行服务器
+#### 2. 运行服务器
 
 ```bash
 go run main.go
 ```
 
-服务器默认运行在 `http://localhost:8080`
-
-### 3. 访问应用
+#### 3. 访问应用
 
 打开浏览器访问 `http://localhost:8080`
 
+### ⚙️ 方式三：生产环境部署
+
+#### Kubernetes 部署
+```bash
+# 使用生成的 K8s 配置
+kubectl apply -f deploy/k8s-deployment.yaml
+
+# 端口转发测试
+kubectl port-forward service/bookmark-service 8080:80
+```
+
+#### Docker Swarm 部署
+```bash
+# 初始化 swarm
+docker swarm init
+
+# 部署服务栈
+docker stack deploy -c docker-compose.yml bookmark-stack
+```
+
 ## 使用说明
 
-1. **注册账号**: 首次使用需要注册一个新账号（需要输入验证码：888888）
+1. **注册账号**: 首次使用需要注册一个新账号（需要输入验证码：112211）
 2. **登录系统**: 使用注册的账号密码登录
 3. **添加书签**: 填写标题、网址和备注（可选）
 4. **编辑书签**: 点击编辑按钮修改书签信息
@@ -73,7 +126,28 @@ go run main.go
 
 ## 环境变量
 
+### 基础配置
 - `PORT` - 服务器端口（默认: 8080）
+- `GIN_MODE` - Gin框架模式（development/release，默认: development）
+- `DATABASE_PATH` - 数据库文件路径（默认: bookmarks.db）
+
+### Docker 配置
+- `REGISTRY_URL` - 私有Docker仓库地址
+- `NAMESPACE` - Docker镜像命名空间
+- `TZ` - 时区设置（默认: Asia/Shanghai）
+
+### 示例配置文件
+```bash
+# .env 文件
+PORT=8080
+GIN_MODE=release
+DATABASE_PATH=/app/data/bookmarks.db
+TZ=Asia/Shanghai
+
+# Docker 构建变量
+REGISTRY_URL=registry.example.com
+NAMESPACE=myapp
+```
 
 ## 安全提示
 
