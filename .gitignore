@@ -60,6 +60,9 @@ create_favicon.py
 build/
 dist/
 
+# Screenshots guide (keep actual screenshots)
+screenshots/README.md
+
 # OS generated files
 Thumbs.db
 .DS_Store
