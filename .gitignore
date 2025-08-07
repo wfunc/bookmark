@@ -18,7 +18,7 @@ bookmark.exe
 *.out
 
 # Go mod cache
-go.sum
+# go.sum 不应该被忽略，它需要被提交以确保依赖版本一致性
 
 # Database files
 *.db
