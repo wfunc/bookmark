@@ -66,3 +66,4 @@ screenshots/README.md
 # OS generated files
 Thumbs.db
 .DS_Store
+test_build.sh
