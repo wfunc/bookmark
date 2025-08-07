@@ -1,0 +1,65 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go build artifacts
+/main
+main
+bookmark
+bookmark.exe
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Go mod cache
+go.sum
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Log files
+*.log
+server.log
+nohup.out
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Dependencies
+/vendor/
+
+# Python files (from favicon generation)
+*.pyc
+__pycache__/
+create_favicon.py
+
+# Build directories
+build/
+dist/
+
+# OS generated files
+Thumbs.db
+.DS_Store

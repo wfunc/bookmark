@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <title>BookMark - 优雅的书签管理</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Background Decoration -->
+    <div class="bg-decoration">
+        <div class="bg-gradient"></div>
+        <div class="bg-pattern"></div>
+    </div>
+
+    <div id="app">
+        <!-- Login/Register Page -->
+        <div id="authPage" class="auth-container">
+            <div class="auth-box glass-effect">
+                <div class="auth-logo">
+                    <i class="fas fa-bookmark"></i>
+                </div>
+                <h1>BookMark</h1>
+                <p class="auth-subtitle">优雅管理你的数字收藏</p>
+
+                <div class="auth-tabs">
+                    <button class="tab-btn active" onclick="switchTab('login')">
+                        <i class="fas fa-sign-in-alt"></i>
+                        登录
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('register')">
+                        <i class="fas fa-user-plus"></i>
+                        注册
+                    </button>
+                </div>
+
+                <form id="loginForm" class="auth-form">
+                    <div class="input-group">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="loginUsername" placeholder="请输入用户名" required>
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="loginPassword" placeholder="请输入密码" required>
+                    </div>
+                    <button type="submit" class="btn-auth">
+                        <span>立即登录</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </form>
+
+                <form id="registerForm" class="auth-form" style="display: none;">
+                    <div class="input-group">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="registerUsername" placeholder="设置用户名" required>
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="registerPassword" placeholder="设置密码" required>
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="confirmPassword" placeholder="确认密码" required>
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-shield-alt"></i>
+                        <input type="text" id="verificationCode" placeholder="请输入验证码" required>
+                    </div>
+                    <div class="verification-hint">
+                        <i class="fas fa-info-circle"></i>
+                        <span>例如注册验证码：<strong>888888</strong></span>
+                    </div>
+                    <button type="submit" class="btn-auth">
+                        <span>创建账户</span>
+                        <i class="fas fa-check"></i>
+                    </button>
+                </form>
+
+                <div id="authMessage" class="message"></div>
+            </div>
+        </div>
+
+        <!-- Main Page -->
+        <div id="mainPage" style="display: none;">
+            <header class="main-header">
+                <div class="header-content">
+                    <div class="header-left">
+                        <div class="logo-area">
+                            <i class="fas fa-bookmark"></i>
+                            <span>BookMark</span>
+                        </div>
+                    </div>
+                    <div class="header-center">
+                        <div class="search-bar">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="searchInput" placeholder="搜索书签..." onkeyup="searchBookmarks()">
+                        </div>
+                    </div>
+                    <div class="header-right">
+                        <button onclick="toggleTheme()" class="theme-toggle">
+                            <i class="fas fa-moon" id="themeIcon"></i>
+                        </button>
+                        <div class="user-menu">
+                            <div class="user-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <span id="username"></span>
+                            <button onclick="logout()" class="logout-btn">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="main-container">
+                <!-- Stats Cards -->
+                <div class="stats-container">
+                    <div class="stat-card glass-effect">
+                        <div class="stat-icon">
+                            <i class="fas fa-bookmark"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalBookmarks">0</h3>
+                            <p>总书签</p>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-effect">
+                        <div class="stat-icon">
+                            <i class="fas fa-calendar-day"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="todayAdded">0</h3>
+                            <p>今日新增</p>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-effect">
+                        <div class="stat-icon">
+                            <i class="fas fa-tags"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="categories">0</h3>
+                            <p>分类数</p>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-effect">
+                        <div class="stat-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="favorites">0</h3>
+                            <p>收藏数</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Add Section -->
+                <div class="quick-add-section">
+                    <button class="btn-quick-add" onclick="toggleQuickAdd()">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>快速添加书签</span>
+                    </button>
+                    <div id="quickAddForm" class="quick-add-form glass-effect" style="display: none;">
+                        <form id="addBookmarkForm">
+                            <div class="form-grid">
+                                <div class="form-field">
+                                    <label><i class="fas fa-heading"></i> 标题</label>
+                                    <input type="text" id="bookmarkTitle" placeholder="输入书签标题" required>
+                                </div>
+                                <div class="form-field">
+                                    <label><i class="fas fa-link"></i> 网址</label>
+                                    <input type="url" id="bookmarkUrl" placeholder="https://example.com" required>
+                                </div>
+                                <div class="form-field full-width">
+                                    <label><i class="fas fa-sticky-note"></i> 备注</label>
+                                    <textarea id="bookmarkNote" placeholder="添加备注信息（可选）" rows="3"></textarea>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" onclick="toggleQuickAdd()" class="btn-cancel">取消</button>
+                                <button type="submit" class="btn-save">
+                                    <i class="fas fa-save"></i> 保存书签
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Bookmarks Grid -->
+                <div class="bookmarks-container">
+                    <div class="bookmarks-header">
+                        <h2><i class="fas fa-layer-group"></i> 我的收藏</h2>
+                        <div class="view-options">
+                            <button onclick="setViewMode('grid')" id="gridView" class="view-btn active">
+                                <i class="fas fa-th-large"></i>
+                            </button>
+                            <button onclick="setViewMode('list')" id="listView" class="view-btn">
+                                <i class="fas fa-list"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="bookmarksList" class="bookmarks-grid">
+                        <!-- Bookmarks will be dynamically added here -->
+                    </div>
+                    <div id="emptyState" class="empty-state">
+                        <div class="empty-illustration">
+                            <i class="fas fa-bookmark"></i>
+                        </div>
+                        <h3>开始收藏你的第一个书签</h3>
+                        <p>点击上方的"快速添加书签"按钮，开始管理你的数字收藏</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Edit Modal -->
+        <div id="editModal" class="modal">
+            <div class="modal-overlay" onclick="closeEditModal()"></div>
+            <div class="modal-content glass-effect">
+                <div class="modal-header">
+                    <h2><i class="fas fa-edit"></i> 编辑书签</h2>
+                    <button onclick="closeEditModal()" class="close-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="editBookmarkForm">
+                    <input type="hidden" id="editBookmarkId">
+                    <div class="modal-body">
+                        <div class="form-field">
+                            <label><i class="fas fa-heading"></i> 标题</label>
+                            <input type="text" id="editTitle" placeholder="输入书签标题" required>
+                        </div>
+                        <div class="form-field">
+                            <label><i class="fas fa-link"></i> 网址</label>
+                            <input type="url" id="editUrl" placeholder="https://example.com" required>
+                        </div>
+                        <div class="form-field">
+                            <label><i class="fas fa-sticky-note"></i> 备注</label>
+                            <textarea id="editNote" placeholder="添加备注信息（可选）" rows="4"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" onclick="closeEditModal()" class="btn-cancel">
+                            <i class="fas fa-times"></i> 取消
+                        </button>
+                        <button type="submit" class="btn-save">
+                            <i class="fas fa-save"></i> 保存更改
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- QR Code Modal -->
+        <div id="qrModal" class="modal">
+            <div class="modal-overlay" onclick="closeQRModal()"></div>
+            <div class="modal-content glass-effect qr-modal">
+                <div class="modal-header">
+                    <h2><i class="fas fa-qrcode"></i> 扫码访问</h2>
+                    <button onclick="closeQRModal()" class="close-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body qr-body">
+                    <div id="qrcode-container"></div>
+                    <div class="qr-info">
+                        <h3 id="qr-title"></h3>
+                        <p id="qr-url"></p>
+                        <div class="qr-actions">
+                            <button onclick="downloadQR()" class="btn-download">
+                                <i class="fas fa-download"></i> 下载二维码
+                            </button>
+                            <button onclick="copyURL()" class="btn-copy">
+                                <i class="fas fa-copy"></i> 复制链接
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+
+</html>
