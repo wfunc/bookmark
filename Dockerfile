@@ -3,8 +3,10 @@
 # ====================
 FROM golang:1.21-alpine AS builder
 
-# 安装必要的构建工具和依赖
-RUN apk add --no-cache \
+# 配置国内镜像源并安装必要的构建工具和依赖
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
+    apk update && \
+    apk add --no-cache \
     gcc \
     musl-dev \
     sqlite-dev \
@@ -37,8 +39,10 @@ RUN go build -tags "sqlite_omit_load_extension" -ldflags "-s -w" -o bookmark mai
 # ====================
 FROM alpine:latest
 
-# 安装运行时依赖
-RUN apk --no-cache add \
+# 配置国内镜像源并安装运行时依赖
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
+    apk update && \
+    apk add --no-cache \
     ca-certificates \
     sqlite \
     tzdata
