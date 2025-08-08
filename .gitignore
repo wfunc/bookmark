@@ -38,6 +38,9 @@ nohup.out
 *~
 .DS_Store
 
+# Serena project files
+.serena/
+
 # Environment files
 .env
 .env.local
