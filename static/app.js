@@ -6,6 +6,48 @@ let sortable = null;
 let viewMode = localStorage.getItem('viewMode') || 'grid';
 let theme = localStorage.getItem('theme') || 'light';
 
+// Toast notification function
+function showToast(message, type = 'info') {
+    const toastContainer = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    let icon = '';
+    switch(type) {
+        case 'success':
+            icon = '<i class="fas fa-check-circle"></i>';
+            break;
+        case 'error':
+            icon = '<i class="fas fa-exclamation-circle"></i>';
+            break;
+        case 'warning':
+            icon = '<i class="fas fa-exclamation-triangle"></i>';
+            break;
+        default:
+            icon = '<i class="fas fa-info-circle"></i>';
+    }
+    
+    toast.innerHTML = `
+        ${icon}
+        <span>${message}</span>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    // Trigger animation
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 10);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    }, 3000);
+}
+
 // API Configuration
 const API_BASE_URL = '/api';
 
@@ -30,6 +72,17 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('registerForm').addEventListener('submit', handleRegister);
     document.getElementById('addBookmarkForm').addEventListener('submit', handleAddBookmark);
     document.getElementById('editBookmarkForm').addEventListener('submit', handleEditBookmark);
+    
+    // Bind modal form handlers (check if elements exist first)
+    const changePasswordForm = document.getElementById('changePasswordForm');
+    if (changePasswordForm) {
+        changePasswordForm.addEventListener('submit', handleChangePassword);
+    }
+    
+    const deleteAccountForm = document.getElementById('deleteAccountForm');
+    if (deleteAccountForm) {
+        deleteAccountForm.addEventListener('submit', handleDeleteAccount);
+    }
     
     // 移动端优化
     preventZoom();
@@ -144,9 +197,15 @@ function clearAuthMessage() {
 
 async function handleLogin(e) {
     e.preventDefault();
+    e.stopPropagation();
     
     const username = document.getElementById('loginUsername').value;
     const password = document.getElementById('loginPassword').value;
+    
+    if (!username || !password) {
+        showAuthMessage('请输入用户名和密码', 'error');
+        return false;
+    }
     
     try {
         const response = await fetch(`${API_BASE_URL}/login`, {
@@ -167,16 +226,21 @@ async function handleLogin(e) {
             
             showMainPage();
             loadBookmarks();
+            updateStats();
         } else {
             showAuthMessage(data.error || '登录失败', 'error');
         }
     } catch (error) {
+        console.error('Login error:', error);
         showAuthMessage('网络错误，请稍后重试', 'error');
     }
+    
+    return false;
 }
 
 async function handleRegister(e) {
     e.preventDefault();
+    e.stopPropagation();
     
     const username = document.getElementById('registerUsername').value;
     const password = document.getElementById('registerPassword').value;
@@ -216,8 +280,11 @@ async function handleRegister(e) {
             showAuthMessage(data.error || '注册失败', 'error');
         }
     } catch (error) {
+        console.error('Register error:', error);
         showAuthMessage('网络错误，请稍后重试', 'error');
     }
+    
+    return false;
 }
 
 function logout() {
@@ -228,6 +295,152 @@ function logout() {
         currentUser = null;
         bookmarks = [];
         showAuthPage();
+    }
+}
+
+// User dropdown menu
+function toggleUserDropdown() {
+    const dropdown = document.getElementById('userDropdown');
+    dropdown.classList.toggle('show');
+    
+    // Close dropdown when clicking outside
+    const closeDropdown = (e) => {
+        if (!e.target.closest('.dropdown')) {
+            dropdown.classList.remove('show');
+            document.removeEventListener('click', closeDropdown);
+        }
+    };
+    
+    setTimeout(() => {
+        document.addEventListener('click', closeDropdown);
+    }, 0);
+}
+
+// Change Password Functions
+function showChangePasswordModal() {
+    document.getElementById('changePasswordModal').style.display = 'block';
+    document.getElementById('oldPassword').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmNewPassword').value = '';
+}
+
+function closeChangePasswordModal() {
+    document.getElementById('changePasswordModal').style.display = 'none';
+}
+
+async function handleChangePassword(e) {
+    e.preventDefault();
+    
+    const oldPassword = document.getElementById('oldPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+    
+    if (newPassword !== confirmNewPassword) {
+        showToast('新密码两次输入不一致', 'error');
+        return;
+    }
+    
+    if (newPassword.length < 6) {
+        showToast('新密码长度至少6位', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/user/change-password`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({
+                old_password: oldPassword,
+                new_password: newPassword
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            showToast(data.message || '密码修改成功，请重新登录', 'success');
+            closeChangePasswordModal();
+            // Clear auth and redirect to login after 2 seconds
+            setTimeout(() => {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('currentUser');
+                authToken = null;
+                currentUser = null;
+                bookmarks = [];
+                showAuthPage();
+                showToast('请使用新密码登录', 'info');
+            }, 2000);
+        } else {
+            showToast(data.error || '密码修改失败', 'error');
+        }
+    } catch (error) {
+        showToast('网络错误，请稍后重试', 'error');
+    }
+}
+
+// Delete Account Functions
+function showDeleteAccountModal() {
+    document.getElementById('deleteAccountModal').style.display = 'block';
+    document.getElementById('deletePassword').value = '';
+    document.getElementById('confirmDelete').checked = false;
+}
+
+function closeDeleteAccountModal() {
+    document.getElementById('deleteAccountModal').style.display = 'none';
+}
+
+async function handleDeleteAccount(e) {
+    e.preventDefault();
+    
+    const password = document.getElementById('deletePassword').value;
+    const confirmDelete = document.getElementById('confirmDelete').checked;
+    
+    if (!confirmDelete) {
+        showToast('请确认您要删除账号', 'error');
+        return;
+    }
+    
+    if (!confirm('最后确认：您真的要永久删除账号吗？此操作不可恢复！')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/user/account`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({
+                password: password,
+                confirm: true
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            showToast(data.message || '账号已删除', 'success');
+            // Clear local storage and redirect to login
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('currentUser');
+            authToken = null;
+            currentUser = null;
+            bookmarks = [];
+            // Close modal first
+            closeDeleteAccountModal();
+            // Show auth page after a short delay
+            setTimeout(() => {
+                showAuthPage();
+            }, 1500);
+        } else {
+            showToast(data.error || '删除失败', 'error');
+        }
+    } catch (error) {
+        showToast('网络错误，请稍后重试', 'error');
     }
 }
 

@@ -111,9 +111,26 @@
                                 <i class="fas fa-user"></i>
                             </div>
                             <span id="username"></span>
-                            <button onclick="logout()" class="logout-btn">
-                                <i class="fas fa-sign-out-alt"></i>
-                            </button>
+                            <div class="dropdown">
+                                <button class="dropdown-toggle" onclick="toggleUserDropdown()">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                                <div id="userDropdown" class="dropdown-menu">
+                                    <button onclick="showChangePasswordModal()" class="dropdown-item">
+                                        <i class="fas fa-key"></i>
+                                        <span>修改密码</span>
+                                    </button>
+                                    <button onclick="showDeleteAccountModal()" class="dropdown-item danger">
+                                        <i class="fas fa-user-times"></i>
+                                        <span>注销账号</span>
+                                    </button>
+                                    <div class="dropdown-divider"></div>
+                                    <button onclick="logout()" class="dropdown-item">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                        <span>退出登录</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -284,7 +301,86 @@
                 </div>
             </div>
         </div>
+
+        <!-- Change Password Modal -->
+        <div id="changePasswordModal" class="modal">
+            <div class="modal-content glass-effect">
+                <div class="modal-header">
+                    <h2><i class="fas fa-key"></i> 修改密码</h2>
+                    <button onclick="closeChangePasswordModal()" class="close-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="changePasswordForm">
+                        <div class="form-group">
+                            <label for="oldPassword">当前密码</label>
+                            <input type="password" id="oldPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="newPassword">新密码</label>
+                            <input type="password" id="newPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmNewPassword">确认新密码</label>
+                            <input type="password" id="confirmNewPassword" required>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" onclick="closeChangePasswordModal()" class="btn-cancel">取消</button>
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-save"></i> 确认修改
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Account Modal -->
+        <div id="deleteAccountModal" class="modal">
+            <div class="modal-content glass-effect">
+                <div class="modal-header danger">
+                    <h2><i class="fas fa-exclamation-triangle"></i> 注销账号</h2>
+                    <button onclick="closeDeleteAccountModal()" class="close-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="warning-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p><strong>警告：此操作不可逆！</strong></p>
+                        <p>注销账号将永久删除您的所有数据，包括：</p>
+                        <ul>
+                            <li>所有书签记录</li>
+                            <li>个人账户信息</li>
+                            <li>所有相关数据</li>
+                        </ul>
+                    </div>
+                    <form id="deleteAccountForm">
+                        <div class="form-group">
+                            <label for="deletePassword">请输入密码以确认注销</label>
+                            <input type="password" id="deletePassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="confirmDelete" required>
+                                <span>我理解此操作不可逆，确认要永久删除账号</span>
+                            </label>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" onclick="closeDeleteAccountModal()" class="btn-cancel">取消</button>
+                            <button type="submit" class="btn-danger">
+                                <i class="fas fa-trash"></i> 永久删除账号
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>

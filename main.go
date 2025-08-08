@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -19,7 +20,7 @@ var (
 	jwtSecret = []byte("your-secret-key-change-this-in-production")
 )
 
-// Models
+// User represents a user of the application.
 type User struct {
 	ID        uint       `gorm:"primaryKey" json:"id"`
 	Username  string     `gorm:"unique;not null" json:"username"`
@@ -29,6 +30,7 @@ type User struct {
 	Bookmarks []Bookmark `json:"bookmarks,omitempty"`
 }
 
+// Bookmark represents a user's bookmark.
 type Bookmark struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	UserID    uint      `json:"user_id"`
@@ -41,16 +43,30 @@ type Bookmark struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// Claims represents the JWT claims for a user.
 type Claims struct {
 	UserID   uint   `json:"user_id"`
 	Username string `json:"username"`
 	jwt.RegisteredClaims
 }
 
-// Initialize database
+// initDB initializes the database
 func initDB() {
 	var err error
-	db, err = gorm.Open(sqlite.Open("bookmarks.db"), &gorm.Config{})
+
+	// Get database path from environment variable, default to current directory
+	dbPath := os.Getenv("DATABASE_PATH")
+	if dbPath == "" {
+		dbPath = "bookmarks.db"
+	} else {
+		// Ensure the directory exists
+		dir := filepath.Dir(dbPath)
+		if err = os.MkdirAll(dir, 0755); err != nil {
+			log.Fatal("Failed to create database directory:", err)
+		}
+	}
+
+	db, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
 	}
@@ -109,8 +125,8 @@ func corsMiddleware() gin.HandlerFunc {
 	}
 }
 
-// Registration verification code (simple server-side validation)
-const REGISTRATION_CODE = "112211"
+// RegistrationCode is the registration verification code (simple server-side validation)
+const RegistrationCode = "112211"
 
 // Handlers
 func register(c *gin.Context) {
@@ -126,7 +142,7 @@ func register(c *gin.Context) {
 	}
 
 	// Verify registration code
-	if input.VerificationCode != REGISTRATION_CODE {
+	if input.VerificationCode != RegistrationCode {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "验证码错误"})
 		return
 	}
@@ -344,6 +360,108 @@ func togglePin(c *gin.Context) {
 	c.JSON(http.StatusOK, bookmark)
 }
 
+// changePassword handles password change requests
+func changePassword(c *gin.Context) {
+	userID := c.GetUint("user_id")
+
+	var input struct {
+		OldPassword string `json:"old_password" binding:"required"`
+		NewPassword string `json:"new_password" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Get current user
+	var user User
+	if err := db.Where("id = ?", userID).First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Verify old password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.OldPassword)); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "旧密码错误"})
+		return
+	}
+
+	// Hash new password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+		return
+	}
+
+	// Update password
+	if err := db.Model(&user).Update("password", string(hashedPassword)).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update password"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "密码修改成功"})
+}
+
+// deleteAccount handles account deletion requests
+func deleteAccount(c *gin.Context) {
+	userID := c.GetUint("user_id")
+
+	var input struct {
+		Password string `json:"password" binding:"required"`
+		Confirm  bool   `json:"confirm" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Check confirmation
+	if !input.Confirm {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请确认删除操作"})
+		return
+	}
+
+	// Get current user
+	var user User
+	if err := db.Where("id = ?", userID).First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Verify password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "密码错误"})
+		return
+	}
+
+	// Begin transaction
+	tx := db.Begin()
+
+	// Delete all user's bookmarks first
+	if err := tx.Where("user_id = ?", userID).Delete(&Bookmark{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete bookmarks"})
+		return
+	}
+
+	// Delete the user
+	if err := tx.Where("id = ?", userID).Delete(&User{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete user"})
+		return
+	}
+
+	// Commit the transaction
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to complete deletion"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "账号已成功删除"})
+}
+
 func main() {
 	// Initialize database
 	initDB()
@@ -373,6 +491,10 @@ func main() {
 			protected.DELETE("/bookmarks/:id", deleteBookmark)
 			protected.POST("/bookmarks/reorder", reorderBookmarks)
 			protected.POST("/bookmarks/:id/pin", togglePin)
+			
+			// User account management
+			protected.POST("/user/change-password", changePassword)
+			protected.DELETE("/user/account", deleteAccount)
 		}
 	}
 
