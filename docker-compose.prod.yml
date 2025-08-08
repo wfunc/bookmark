@@ -8,16 +8,13 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - bookmark_data:/app/data
+      - /data/bookmark:/app/data
     environment:
       - PORT=8080
       - GIN_MODE=release
+      - DATABASE_PATH=/app/data/bookmarks.db
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/" ]
       interval: 30s
       timeout: 10s
       retries: 3
-
-volumes:
-  bookmark_data:
-    driver: local
