@@ -63,6 +63,9 @@ create_favicon.py
 build/
 dist/
 
+# Generated deployment files
+deploy/
+
 # Screenshots guide (keep actual screenshots)
 screenshots/README.md
 
